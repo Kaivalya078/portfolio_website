@@ -41,8 +41,7 @@ export const identity = {
   role: 'AI / ML Engineer',
   tagline: 'building practical AI systems.',
   /** Used for <title>, meta description and Open Graph. */
-  summary:
-    'B.Tech Computer Science graduate specializing in machine learning, retrieval-augmented generation and computer vision, with a year of internship experience building production-oriented AI systems.',
+  summary: 'AI / ML Engineer building practical AI systems.',
 };
 
 export const social: Link[] = [
