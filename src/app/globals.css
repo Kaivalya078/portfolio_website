@@ -1,0 +1,622 @@
+/* =========================================================================
+   Kaivalya Patel - portfolio
+   Edit colours, type scale and column widths here. Nothing else needs to change.
+   ========================================================================= */
+
+:root {
+  /* Surfaces and ink -------------------------------------------------- */
+  --paper: #f4f1ea; /* warm ivory page, never pure white */
+  --paper-raised: #faf8f3; /* panel surface */
+  --ink: #1c1b18; /* primary text */
+  --ink-2: #4a4843; /* secondary */
+  --ink-3: #8a867c; /* meta / muted */
+  --rule: #ddd8cc; /* hairline border */
+  --rule-strong: #c9c3b4;
+  --accent: #b4552d; /* muted terracotta, echoes the koi */
+
+  /* Column widths ----------------------------------------------------- */
+  --w-sidebar: 300px;
+  --w-list: 300px;
+  --w-detail: 420px;
+
+  /* Motion ------------------------------------------------------------ */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur: 420ms;
+
+  /* Type -------------------------------------------------------------- */
+  --fs-name: 28px;
+  --fs-title: 20px;
+  --fs-nav: 15px;
+  --fs-body: 14.5px;
+  --fs-meta: 12.5px;
+}
+
+@media (max-width: 1439px) {
+  :root {
+    --w-sidebar: 260px;
+    --w-list: 280px;
+    --w-detail: 360px;
+  }
+}
+
+@media (max-width: 1199px) {
+  :root {
+    --w-sidebar: 240px;
+    --w-detail: 340px;
+  }
+}
+
+@media (max-width: 1023px) {
+  :root {
+    /* Measured from site-a-mobile-reference.mp4 at 384px: one column at ~285px,
+       with the pond holding the remaining ~95px strip. */
+    --w-sidebar: min(285px, 74vw);
+    --w-list: min(285px, 74vw);
+    --w-detail: min(285px, 74vw);
+  }
+}
+
+/* Reset ------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  font-size: var(--fs-body);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden; /* the workspace owns all scrolling */
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+figure {
+  margin: 0;
+  padding: 0;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Workspace -------------------------------------------------------------- */
+
+.workspace {
+  display: flex;
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* A column of the strip: sidebar or any panel. */
+.column {
+  flex: 0 0 auto;
+  height: 100%;
+  background: var(--paper);
+  border-right: 1px solid var(--rule);
+  overflow: hidden; /* so the width animation never reflows the text inside */
+}
+
+.column__inner {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-strong) transparent;
+  padding: 36px 28px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar {
+  width: var(--w-sidebar); /* present on first paint, never animates */
+}
+
+.panel--list {
+  width: var(--w-list);
+}
+
+.panel--detail {
+  width: var(--w-detail);
+}
+
+/* Opening and closing are one transition run in opposite directions, so the
+   pond is pushed and released at the same rate and a column reopened mid
+   collapse simply turns around. @starting-style supplies the width a panel
+   transitions from on mount; the extra .column raises specificity above the
+   width the variant sets. */
+.panel {
+  transition: width var(--dur) var(--ease), opacity var(--dur) var(--ease),
+    visibility var(--dur);
+}
+
+@starting-style {
+  .column.panel {
+    width: 0;
+    opacity: 0;
+  }
+}
+
+.column.panel--closing {
+  width: 0;
+  opacity: 0;
+}
+
+/* The column budget: how many trailing columns stay visible.
+   State is never touched - only what gets painted. */
+/* The list gives way to the detail. Collapsing its width rather than hiding it
+   outright lets the two swap in step, so the pond is never flashed wide for the
+   frame in between. visibility trails the transition, which keeps the clipped
+   content out of the tab order once it has actually gone. */
+@media (max-width: 1199px) {
+  .panel--list:has(~ .panel--detail:not(.panel--closing)) {
+    width: 0;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Below this a panel replaces the sidebar, which cannot animate alongside it,
+   so a width animation here would invent a pond resize that is not really
+   happening - the pond would balloon to full width and snap back. The columns
+   swap instantly instead and the pond never moves. A panel on its way out
+   leaves the layout at once, so the column underneath returns with it rather
+   than after it. */
+@media (max-width: 1023px) {
+  .sidebar:has(~ .panel:not(.panel--closing)) {
+    display: none;
+  }
+
+  .panel {
+    transition: none;
+  }
+
+  .column.panel--closing {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  /* Reference A sits its text ~20px from the column edge; at 285px wide that
+     difference is the margin between comfortable and cramped. */
+  .column__inner {
+    padding: 26px 20px 24px;
+  }
+
+  .nav {
+    margin-top: 32px;
+    padding-top: 22px;
+  }
+
+  .socials {
+    padding-top: 32px;
+  }
+
+  /* Comfortable touch targets without changing the visual rhythm. */
+  .nav__button,
+  .list__button,
+  .socials__link {
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+}
+
+.column__inner::-webkit-scrollbar {
+  width: 8px;
+}
+
+.column__inner::-webkit-scrollbar-thumb {
+  background: var(--rule-strong);
+  border-radius: 4px;
+}
+
+.column__inner::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Pond ------------------------------------------------------------------- */
+
+.pond {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  position: relative;
+}
+
+.pond canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* Sidebar ---------------------------------------------------------------- */
+
+.identity__name {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: var(--fs-name);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.identity__role {
+  margin-top: 18px;
+  font-size: var(--fs-nav);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.identity__role span {
+  display: block;
+  color: var(--ink-3);
+}
+
+.nav {
+  margin-top: 40px;
+  padding-top: 28px;
+  border-top: 1px solid var(--rule);
+}
+
+.nav__item + .nav__item {
+  margin-top: 4px;
+}
+
+.nav__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: var(--fs-nav);
+  color: var(--ink-2);
+  transition: color 160ms var(--ease);
+}
+
+.nav__button:hover {
+  color: var(--ink);
+}
+
+.nav__button[aria-expanded='true'] {
+  color: var(--ink);
+}
+
+/* Inline close marker on the nav row, as reference A does it. */
+.nav__mark {
+  display: inline-flex;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.nav__mark::before,
+.nav__mark::after {
+  content: '';
+  position: absolute;
+  inset: 50% 3px auto 3px;
+  height: 1px;
+  background: var(--paper-raised);
+  transform-origin: center;
+}
+
+.nav__mark::before {
+  transform: rotate(45deg);
+}
+
+.nav__mark::after {
+  transform: rotate(-45deg);
+}
+
+.socials {
+  margin-top: auto;
+  padding-top: 40px;
+}
+
+.socials__link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 0;
+  font-size: var(--fs-nav);
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: color 160ms var(--ease);
+}
+
+.socials__link:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.socials__item + .socials__item {
+  margin-top: 2px;
+}
+
+/* The email control is a button, but should sit in the same rhythm as the
+   links beside it. */
+.socials__copy {
+  cursor: pointer;
+  text-align: left;
+}
+
+.socials__hint {
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
+  opacity: 0;
+  transition: opacity 160ms var(--ease);
+}
+
+.socials__copy:hover .socials__hint,
+.socials__copy:focus-visible .socials__hint {
+  opacity: 1;
+}
+
+/* Panels ----------------------------------------------------------------- */
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+.panel__title {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: var(--fs-title);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.panel__title:focus {
+  outline: none;
+}
+
+/* The close mark belongs to the leftmost painted column. That is usually the
+   row which opened the panel, so a panel's own mark stays hidden until the
+   column budget drops that row - which is what the mobile reference shows. */
+.panel__close {
+  display: none;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+@media (max-width: 1199px) {
+  .panel--detail .panel__close {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 1023px) {
+  .panel--list .panel__close {
+    display: inline-flex;
+  }
+
+  /* A 13px circle is too small to tap; grow the hit area, not the mark. */
+  .panel__close {
+    padding: 10px;
+    margin: -10px;
+  }
+}
+
+/* Lists inside panels ---------------------------------------------------- */
+
+.list__item + .list__item {
+  margin-top: 2px;
+}
+
+.list__button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 0;
+  font-size: var(--fs-nav);
+  color: var(--ink-2);
+  transition: color 160ms var(--ease);
+}
+
+.list__button:hover,
+.list__button[aria-expanded='true'] {
+  color: var(--ink);
+}
+
+/* The label and its close mark share a line; the subtitle sits under both. */
+.list__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.list__sub {
+  display: block;
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
+  margin-top: 1px;
+}
+
+/* Detail ----------------------------------------------------------------- */
+
+.detail__meta {
+  font-size: var(--fs-meta);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 18px;
+}
+
+/* The role carries more weight than the dates, so it leads. */
+.detail__lead {
+  font-size: var(--fs-nav);
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.detail__meta--under {
+  margin-bottom: 0;
+}
+
+.detail__body {
+  color: var(--ink-2);
+}
+
+.detail__body p + p {
+  margin-top: 14px;
+}
+
+.detail__arch {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--paper-raised);
+  font-size: var(--fs-meta);
+  line-height: 1.7;
+  color: var(--ink-2);
+}
+
+.detail__section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+}
+
+.detail__label {
+  font-size: var(--fs-meta);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 12px;
+}
+
+.detail__points li {
+  position: relative;
+  padding-left: 16px;
+  color: var(--ink-2);
+}
+
+.detail__points li + li {
+  margin-top: 10px;
+}
+
+.detail__points li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 5px;
+  height: 1px;
+  background: var(--rule-strong);
+}
+
+.detail__stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
+}
+
+.detail__stack li::after {
+  content: ' \00B7';
+  color: var(--rule-strong);
+}
+
+.detail__stack li:last-child::after {
+  content: '';
+}
+
+.detail__note {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  font-size: var(--fs-meta);
+  line-height: 1.7;
+  color: var(--ink-3);
+}
+
+.detail__links {
+  margin-top: 26px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.detail__link {
+  font-size: var(--fs-nav);
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 2px;
+  transition: color 160ms var(--ease), border-color 160ms var(--ease);
+}
+
+.detail__link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Reduced motion --------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+  }
+}
